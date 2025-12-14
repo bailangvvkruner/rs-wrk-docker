@@ -16,9 +16,9 @@ RUN set -eux && apk add --no-cache --no-scripts --virtual .build-deps \
     upx \
     && rustup target add x86_64-unknown-linux-musl
 
-# 克隆仓库并构建（设置 OpenSSL 相关环境变量）
+# 克隆仓库并构建（启用 OpenSSL vendored 模式以避免musl环境下的编译问题）
 RUN git clone --depth 1 -b master https://github.com/bailangvvkg/rs-wrk . \
-    && OPENSSL_STATIC=1 OPENSSL_LIB_DIR=/usr/lib OPENSSL_INCLUDE_DIR=/usr/include \
+    && OPENSSL_VENDOR=1 \
        cargo build --release --target x86_64-unknown-linux-musl \
     && echo "Binary size after build:" \
     && du -b target/x86_64-unknown-linux-musl/release/rs-wrk \
