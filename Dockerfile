@@ -1,16 +1,21 @@
-# Rust Static Compilation for Alpine (musl)
-# Using a proven builder image that already has OpenSSL properly configured
+# Rust Static Compilation using cross-rs for reliable musl builds
+# cross-rs handles OpenSSL and other C library dependencies automatically
 
-# Build stage - using a proven Rust+musl builder image
-FROM messense/rust-musl-cross:x86_64-musl AS builder
+# Build stage - using cross-rs for reliable static compilation
+FROM rust:alpine AS builder
+
+# Install cross tool and dependencies
+RUN apk add --no-cache musl-dev git openssl-dev openssl-libs-static
+RUN cargo install cross
 
 WORKDIR /app
 
 # Clone the project
 RUN git clone --depth 1 -b master https://github.com/bailangvvkg/rs-wrk .
 
-# Build static binary (this image already has OpenSSL properly configured for musl)
-RUN cargo build --release
+# Build with cross - it will use a pre-configured Docker image for musl target
+# cross handles all OpenSSL and C library compatibility issues
+RUN cross build --release --target x86_64-unknown-linux-musl
 
 # Optional: strip binary to reduce size
 RUN strip --strip-all target/x86_64-unknown-linux-musl/release/rs-wrk && \
