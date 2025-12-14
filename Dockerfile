@@ -1,38 +1,25 @@
-# Rust Docker Build - 使用标准 glibc 目标以确保兼容性
-# 使用 Rust 编译二进制文件
+# Rust Static Compilation for Alpine (musl)
+# Using specialized muslrust image for static compilation
 
-# 构建阶段 - 使用 Rust Alpine 环境
-FROM rust:alpine AS builder
+# Build stage - using muslrust image specifically designed for static compilation
+FROM clux/muslrust:stable AS builder
 
 WORKDIR /app
 
-# 安装构建依赖（包含 openssl-dev 以解决 OpenSSL 编译问题）
-RUN set -eux && apk add --no-cache --no-scripts --virtual .build-deps \
-    git \
-    binutils \
-    upx \
-    openssl-dev
+# Clone and build the project (this image handles OpenSSL and other C library compatibility)
+RUN git clone --depth 1 -b master https://github.com/bailangvvkg/rs-wrk .
 
-# 克隆仓库并构建（为 openssl-sys 明确指定库路径）
-RUN git clone --depth 1 -b master https://github.com/bailangvvkg/rs-wrk . \
-    && OPENSSL_DIR=/usr \
-       OPENSSL_LIB_DIR=/usr/lib \
-       OPENSSL_INCLUDE_DIR=/usr/include \
-       cargo build --release \
-    && echo "Binary size after build:" \
-    && du -b target/release/rs-wrk \
-    && strip --strip-all target/release/rs-wrk \
-    && echo "Binary size after stripping:" \
-    && du -b target/release/rs-wrk \
-    && upx --best --lzma target/release/rs-wrk \
-    && echo "Binary size after upx:" \
-    && du -b target/release/rs-wrk
+# Build static binary for musl target
+RUN cargo build --release --target x86_64-unknown-linux-musl
 
-# 运行时阶段 - 使用 Alpine 作为基础镜像
+# Optional: strip binary to reduce size
+RUN strip --strip-all /app/target/x86_64-unknown-linux-musl/release/rs-wrk
+
+# Runtime stage - using minimal Alpine image
 FROM alpine:latest
 
-# 复制 rs-wrk 二进制文件
-COPY --from=builder /app/target/release/rs-wrk /usr/local/bin/rs-wrk
+# Copy the statically compiled binary from builder stage
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/rs-wrk /usr/local/bin/rs-wrk
 
-# 设置入口点
+# Set entrypoint
 ENTRYPOINT ["/usr/local/bin/rs-wrk"]
