@@ -21,19 +21,16 @@ RUN apk add --no-cache \
     make \
     perl
 
-# Set all necessary environment variables for openssl-sys
-ENV OPENSSL_DIR=/usr
-ENV OPENSSL_LIB_DIR=/usr/lib
-ENV OPENSSL_INCLUDE_DIR=/usr/include
-ENV OPENSSL_STATIC=1
-ENV PKG_CONFIG_ALLOW_CROSS=1
-ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig
-ENV RUSTFLAGS="-C target-feature=-crt-static"
+# Set environment for vendored OpenSSL build
+ENV OPENSSL_VENDOR=1
 
 # Clone the project
 RUN git clone --depth 1 -b master https://github.com/bailangvvkg/rs-wrk .
 
-# Build with explicit OpenSSL configuration
+# Modify Cargo.toml to add openssl with vendored feature
+RUN sed -i '/hyper-tls = "0.4"/a openssl = { version = "0.10", features = ["vendored"] }' Cargo.toml
+
+# Build with vendored OpenSSL
 RUN cargo build --release --target x86_64-unknown-linux-musl
 
 # Verify binary is statically linked
