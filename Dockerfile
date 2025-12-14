@@ -22,6 +22,9 @@ ENV OPENSSL_VENDOR=1
 # Clone the project
 RUN git clone --depth 1 -b master https://github.com/bailangvvkg/rs-wrk .
 
+# Force update dependencies to use fixed versions
+RUN cargo update -p socket2 --precise 0.3.19
+
 # Build with vendored OpenSSL (dependencies already fixed in source)
 RUN cargo build --release --target x86_64-unknown-linux-musl
 
