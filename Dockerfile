@@ -22,13 +22,7 @@ ENV OPENSSL_VENDOR=1
 # Clone the project
 RUN git clone --depth 1 -b master https://github.com/bailangvvkg/rs-wrk .
 
-# Modify Cargo.toml to add or update openssl with vendored feature
-# First check if openssl already exists, if not add it after hyper-tls
-RUN if ! grep -q '^openssl = ' Cargo.toml; then \
-    sed -i '/hyper-tls = "0.4"/a openssl = { version = "0.10", features = ["vendored"] }' Cargo.toml; \
-    fi
-
-# Build with vendored OpenSSL
+# Build with vendored OpenSSL (dependencies already fixed in source)
 RUN cargo build --release --target x86_64-unknown-linux-musl
 
 # Verify binary is statically linked
