@@ -12,9 +12,12 @@ RUN set -eux && apk add --no-cache --no-scripts --virtual .build-deps \
     binutils \
     upx
 
-# 克隆仓库并构建（使用标准 release 构建）
+# 克隆仓库并构建（为 openssl-sys 明确指定库路径）
 RUN git clone --depth 1 -b master https://github.com/bailangvvkg/rs-wrk . \
-    && cargo build --release \
+    && OPENSSL_DIR=/usr \
+       OPENSSL_LIB_DIR=/usr/lib \
+       OPENSSL_INCLUDE_DIR=/usr/include \
+       cargo build --release \
     && echo "Binary size after build:" \
     && du -b target/release/rs-wrk \
     && strip --strip-all target/release/rs-wrk \
