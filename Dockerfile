@@ -6,15 +6,15 @@ FROM rust:alpine AS builder
 
 WORKDIR /app
 
-# Install essential build dependencies
-# Note: We only need basic tools since we're using vendored OpenSSL
+# Install essential build dependencies including perl for OpenSSL vendored build
 RUN apk add --no-cache \
     musl-dev \
     git \
     binutils \
     upx \
     gcc \
-    make
+    make \
+    perl
 
 # Set environment for vendored OpenSSL build
 ENV OPENSSL_VENDOR=1
