@@ -6,11 +6,12 @@ FROM rust:alpine AS builder
 
 WORKDIR /app
 
-# 安装构建依赖（使用 glibc 目标，避免 musl 兼容性问题）
+# 安装构建依赖（包含 openssl-dev 以解决 OpenSSL 编译问题）
 RUN set -eux && apk add --no-cache --no-scripts --virtual .build-deps \
     git \
     binutils \
-    upx
+    upx \
+    openssl-dev
 
 # 克隆仓库并构建（为 openssl-sys 明确指定库路径）
 RUN git clone --depth 1 -b master https://github.com/bailangvvkg/rs-wrk . \
