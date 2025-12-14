@@ -6,13 +6,20 @@ FROM rust:alpine AS builder
 
 WORKDIR /app
 
-# 安装 musl target 用于静态编译
-RUN apk add --no-cache musl-dev git binutils upx \
+# 安装 musl target 和 OpenSSL 开发包（用于静态编译）
+RUN set -eux && apk add --no-cache --no-scripts --virtual .build-deps \
+    musl-dev \
+    openssl-dev \
+    openssl-libs-static \
+    git \
+    binutils \
+    upx \
     && rustup target add x86_64-unknown-linux-musl
 
-# 克隆仓库并构建
+# 克隆仓库并构建（设置 OpenSSL 相关环境变量）
 RUN git clone --depth 1 -b master https://github.com/bailangvvkg/rs-wrk . \
-    && cargo build --release --target x86_64-unknown-linux-musl \
+    && OPENSSL_STATIC=1 OPENSSL_LIB_DIR=/usr/lib OPENSSL_INCLUDE_DIR=/usr/include \
+       cargo build --release --target x86_64-unknown-linux-musl \
     && echo "Binary size after build:" \
     && du -b target/x86_64-unknown-linux-musl/release/rs-wrk \
     && strip --strip-all target/x86_64-unknown-linux-musl/release/rs-wrk \
