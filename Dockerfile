@@ -1,19 +1,33 @@
 # Rust Static Compilation for Alpine (musl)
-# Using specialized muslrust image for static compilation
+# Using vendored OpenSSL to avoid system library compatibility issues
 
-# Build stage - using muslrust image specifically designed for static compilation
-FROM clux/muslrust:stable AS builder
+# Build stage - using Rust Alpine with vendored OpenSSL
+FROM rust:alpine AS builder
 
 WORKDIR /app
 
-# Clone and build the project (this image handles OpenSSL and other C library compatibility)
-RUN git clone --depth 1 -b master https://github.com/bailangvvkg/rs-wrk .
+# Install build dependencies
+RUN apk add --no-cache musl-dev git binutils upx
 
-# Build static binary for musl target
-RUN cargo build --release --target x86_64-unknown-linux-musl
+# Enable vendored feature for OpenSSL - this will compile OpenSSL from source
+ENV OPENSSL_VENDOR=1
+ENV OPENSSL_STATIC=1
+
+# Clone and build with vendored OpenSSL
+RUN git clone --depth 1 -b master https://github.com/bailangvvkg/rs-wrk . && \
+    cargo build --release --target x86_64-unknown-linux-musl && \
+    echo "Binary size after build:" && \
+    du -h target/x86_64-unknown-linux-musl/release/rs-wrk
 
 # Optional: strip binary to reduce size
-RUN strip --strip-all /app/target/x86_64-unknown-linux-musl/release/rs-wrk
+RUN strip --strip-all target/x86_64-unknown-linux-musl/release/rs-wrk && \
+    echo "Binary size after stripping:" && \
+    du -h target/x86_64-unknown-linux-musl/release/rs-wrk
+
+# Optional: compress with upx
+RUN upx --best --lzma target/x86_64-unknown-linux-musl/release/rs-wrk && \
+    echo "Binary size after upx:" && \
+    du -h target/x86_64-unknown-linux-musl/release/rs-wrk
 
 # Runtime stage - using minimal Alpine image
 FROM alpine:latest
